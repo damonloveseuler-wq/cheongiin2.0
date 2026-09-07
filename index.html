@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>커스텀 한글 키보드</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="keyboard-container">
+        <!-- 텍스트 입력창 -->
+        <textarea id="output" readonly placeholder="키보드를 입력하세요..."></textarea>
+
+        <!-- 키보드 자판 레이아웃 -->
+        <div class="keyboard">
+            <!-- 1열: 숫자 -->
+            <div class="key num">1</div><div class="key num">2</div><div class="key num">3</div><div class="key num">4</div><div class="key num">5</div>
+            <div class="key num">6</div><div class="key num">7</div><div class="key num">8</div><div class="key num">9</div><div class="key num">0</div>
+
+            <!-- 2열 -->
+            <div class="key r2-3" data-key="ㅅ">ㅅ</div>
+            <div class="key r2-3" data-key="ㅇ">ㅇ</div>
+            <div class="key r2-3" data-key="ㄴ">ㄴ</div>
+            <div class="key r2-3 action-key" data-action="backspace">⌫</div>
+
+            <!-- 3열 -->
+            <div class="key r2-3" data-key="ㄱ">ㄱ</div>
+            <div class="key r2-3" data-key="ㅡ">ㅡ</div>
+            <div class="key r2-3" data-key="ㅣ">ㅣ</div>
+            <div class="key r3-d" data-key="ㄷ">ㄷ</div>
+            <div class="key r3-enter action-key" data-action="enter">↵</div>
+
+            <!-- 4열 -->
+            <div class="key r4" data-key="ㅂ">ㅂ</div>
+            <div class="key r4" data-key="ㄹ">ㄹ</div>
+            <div class="key r4" data-key="ㅁ">ㅁ</div>
+            <div class="key r4" data-key="ㅈ">ㅈ</div>
+
+            <!-- 5-6열 혼합 구역 -->
+            <div class="key emoji-key">이<br>모<br>지</div>
+            <div class="key r5-mid" data-key=".">.</div>
+            <div class="key r5-mid" data-key="ㅊ">ㅊ</div>
+            <div class="key r5-mid" data-key="ㅎ">ㅎ</div>
+            <div class="key r5-mid" data-key="?">?</div>
+            <div class="key hangul-eng-key" data-action="lang">한<br>/<br>영</div>
+
+            <div class="key r6-text">특수문자</div>
+            <div class="key r6-space action-key" data-action="space">␣</div>
+            <div class="key r6-text">한자</div>
+        </div>
+    </div>
+
+    <!-- 💡 원인 해결: 한글 조합 라이브러리 CDN 주소 백업 변경 -->
+    <script src="https://cloudflare.com"></script>
+    <script src="app.js"></script>
+</body>
+</html>
+
