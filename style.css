@@ -50,6 +50,8 @@ body {
     user-select: none;
     box-sizing: border-box;
     min-height: 52px;
+
+    touch-action: none; 
 }
 
 .key:active {
