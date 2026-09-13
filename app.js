@@ -24,10 +24,10 @@ function bindEvents() {
 }
 
 function onMouseDown(e) { startTracking(e, this); }
-function onTouchStart(e) { startTracking(e.touches ? e.touches[0] : e, this); }
+function onTouchStart(e) { startTracking(e.touches ? e.touches : e, this); }
 
 window.addEventListener('mousemove', (e) => trackMovement(e));
-window.addEventListener('touchmove', (e) => trackMovement(e.touches ? e.touches[0] : e), {passive: true});
+window.addEventListener('touchmove', (e) => trackMovement(e.touches ? e.touches : e), {passive: true});
 window.addEventListener('mouseup', () => stopTracking());
 window.addEventListener('touchend', () => stopTracking());
 
@@ -46,13 +46,19 @@ function trackMovement(e) {
 
     const diffX = e.clientX - lastX;
     const diffY = e.clientY - lastY;
-    const threshold = 15; 
+    const threshold = 15; // 방향을 인식할 최소 픽셀 거리 (조금 더 민감하게 조정)
 
     let currentDir = null;
+    
+    // 🔥 [버그 수정] 가로/세로 이동 거리를 명확하게 개별 비교하여 U, D, L, R 판정하도록 수정
     if (Math.abs(diffX) > Math.abs(diffY)) {
-        if (Math.abs(diffX) > threshold) currentDir = diffX > 0 ? 'R' : 'L';
+        if (Math.abs(diffX) > threshold) {
+            currentDir = diffX > 0 ? 'R' : 'L';
+        }
     } else {
-        if (Math.abs(diffY) > threshold) currentDir = diffY > 0 ? 'D' : 'U';
+        if (Math.abs(diffY) > threshold) {
+            currentDir = diffY > 0 ? 'D' : 'U';
+        }
     }
 
     if (currentDir) {
@@ -107,11 +113,12 @@ function stopTracking() {
     activeKey = null;
 }
 
-// 💡 요청하신 오리지널 스와이프 규칙 복원
+// 자음/모음 스와이프 규칙 최종 처리기
 function handleKoreanInput(key, history) {
     let resultChar = key;
     const pattern = history.join('');
 
+    // 1. 모음 스와이프 규칙
     if (key === 'ㅡ') {
         if (pattern === 'U') resultChar = 'ㅗ';
         else if (pattern === 'D') resultChar = 'ㅜ';
@@ -125,6 +132,22 @@ function handleKoreanInput(key, history) {
         else if (pattern === 'L') resultChar = 'ㅓ';
         else if (pattern === 'LRL') resultChar = 'ㅕ';
         else resultChar = 'ㅣ'; 
+    }
+    // 2. 자음 스와이프 규칙 (위로 올리면 쌍자음, 오른쪽은 거센소리)
+    else if (key === 'ㄱ') {
+        if (pattern === 'U') resultChar = 'ㄲ';
+        else if (pattern === 'R') resultChar = 'ㅋ';
+    }
+    else if (key === 'ㄷ') {
+        if (pattern === 'U') resultChar = 'ㄸ';
+        else if (pattern === 'R') resultChar = 'ㅌ';
+    }
+    else if (key === 'ㅂ') {
+        if (pattern === 'U') resultChar = 'ㅃ';
+        else if (pattern === 'R') resultChar = 'ㅍ';
+    }
+    else if (key === 'ㅅ') {
+        if (pattern === 'U') resultChar = 'ㅆ';
     }
 
     inputLetters.push(resultChar);
@@ -167,13 +190,87 @@ function toggleLanguageMode() {
     }
 }
 
-function renderText() {
-    // Hangul 라이브러리가 정상 로드되었는지 체크하는 안전장치
-    if (typeof Hangul !== 'undefined') {
-        output.value = Hangul.assemble(inputLetters);
-    } else {
-        output.value = inputLetters.join(''); // 라이브러리가 꺼져있으면 분리된 채로라도 출력 보장
+// 순수 자바스크립트 한글 글자 결합 엔진 (오토마타)
+function hangulAssembleCustom(letters) {
+    const cho = ["ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
+    const jung = ["ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ", "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ", "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ", "ㅞ", "ㅟ", "ㅠ", "ㅡ", "ㅢ", "ㅣ"];
+    const jong = ["", "ㄱ", "ㄲ", "ㄳ", "ㄴ", "ㄵ", "ㄶ", "ㄷ", "ㄹ", "ㄺ", "ㄻ", "ㄼ", "ㄽ", "ㄾ", "ㄿ", "ㅀ", "ㅁ", "ㅂ", "ㅄ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
+
+    const complexJung = { "ㅗ-ㅏ": "ㅘ", "ㅗ-ㅐ": "ㅙ", "ㅗ-ㅣ": "ㅚ", "ㅜ-ㅓ": "ㅝ", "ㅜ-ㅔ": "ㅞ", "ㅜ-ㅣ": "ㅟ", "ㅡ-ㅣ": "ㅢ",    "ㅏ-ㅣ": "ㅐ", "ㅓ-ㅣ": "ㅔ", "ㅑ-ㅣ": "ㅒ", "ㅕ-ㅣ": "ㅖ" };
+    const complexJong = { "ㄱ-ㅅ": "ㄳ", "ㄴ-ㅈ": "ㄵ", "ㄴ-ㅎ": "ㄶ", "ㄹ-ㄱ": "ㄺ", "ㄹ-ㅁ": "ㄻ", "ㄹ-ㅂ": "ㄼ", "ㄹ-ㅅ": "ㄽ", "ㄹ-ㅌ": "ㄾ", "ㄹ-ㅍ": "ㄿ", "ㄹ-ㅎ": "ㅀ", "ㅂ-ㅅ": "ㅄ" };
+
+    let result = "";
+    let i = 0;
+
+    while (i < letters.length) {
+        let char = letters[i];
+
+        if (!cho.includes(char) && !jung.includes(char) && !jong.includes(char)) {
+            result += char;
+            i++;
+            continue;
+        }
+
+        if (!cho.includes(char)) {
+            if (i + 1 < letters.length && complexJung[`${char}-${letters[i+1]}`]) {
+                result += complexJung[`${char}-${letters[i+1]}`];
+                i += 2;
+            } else {
+                result += char;
+                i++;
+            }
+            continue;
+        }
+
+        let cIdx = cho.indexOf(char);
+        let jIdx = -1;
+        let tIdx = 0;
+        i++;
+
+        if (i < letters.length && jung.includes(letters[i])) {
+            let currentJung = letters[i];
+            i++;
+            if (i < letters.length && complexJung[`${currentJung}-${letters[i]}`]) {
+                currentJung = complexJung[`${currentJung}-${letters[i]}`];
+                i++;
+            }
+            jIdx = jung.indexOf(currentJung);
+        }
+
+        if (jIdx === -1) {
+            result += cho[cIdx];
+            continue;
+        }
+
+        if (i < letters.length && jong.includes(letters[i])) {
+            if (i + 1 < letters.length && jung.includes(letters[i+1])) {
+                tIdx = 0;
+            } else {
+                let currentJong = letters[i];
+                let step = 1;
+                
+                if (i + 1 < letters.length && complexJong[`${currentJong}-${letters[i+1]}`]) {
+                    if (i + 2 < letters.length && jung.includes(letters[i+2])) {
+                        currentJong = letters[i];
+                        step = 1;
+                    } else {
+                        currentJong = complexJong[`${currentJong}-${letters[i+1]}`];
+                        step = 2;
+                    }
+                }
+                tIdx = jong.indexOf(currentJong);
+                i += step;
+            }
+        }
+
+        let uniCode = 0xAC00 + (cIdx * 21 * 28) + (jIdx * 28) + tIdx;
+        result += String.fromCharCode(uniCode);
     }
+    return result;
+}
+
+function renderText() {
+    output.value = hangulAssembleCustom(inputLetters);
 }
 
 bindEvents();
