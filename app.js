@@ -149,7 +149,11 @@ function handleKoreanInput(key, history) {
     else if (key === 'ㅅ') {
         if (pattern === 'U') resultChar = 'ㅆ';
     }
+    else if (key === 'ㅈ') {
+        if (pattern === 'U') resultChar = 'ㅉ';
+    }
 
+    
     inputLetters.push(resultChar);
     renderText();
 }
